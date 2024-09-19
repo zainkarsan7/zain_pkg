@@ -33,7 +33,7 @@ set(THIS_PACKAGE_INCLUDE_DEPENDS
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
-
+find_package(rclpy REQUIRED)
 
 
 if(BUILD_TESTING)
@@ -60,8 +60,6 @@ install(DIRECTORY meshes/
 install(DIRECTORY urdf/
   DESTINATION share/${PROJECT_NAME}/urdf
 )
-install(DIRECTORY
-  launch
-  DESTINATION share/${PROJECT_NAME}/
-)
+install(DIRECTORY launch
+DESTINATION share/${PROJECT_NAME})
 ament_package()

@@ -1,22 +1,67 @@
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument
+from launch.substitutions import Command, PathJoinSubstitution, LaunchConfiguration
+
 from launch_ros.actions import Node
-from moveit_configs_utils import MoveItConfigsBuilder
 from launch_ros.parameter_descriptions import ParameterValue
-from launch.substitutions import Command
 from launch_ros.substitutions import FindPackageShare
-from launch.substitutions import PathJoinSubstitution
+
 
 def generate_launch_description():
-    moveit_config = MoveItConfigsBuilder("moveit_resources_panda").to_moveit_configs()
-   
-    tut_node = Node(
-        package="zain_pkg",
-        executable="zain_robot",
+    ur_type = LaunchConfiguration("ur_type")
+    description_package = FindPackageShare("zain_pkg")
+    description_file = PathJoinSubstitution(
+        [description_package, "urdf", "hb_robot.urdf.xacro"]
+    )
+    rvizconfig_file = PathJoinSubstitution([description_package, "rviz", "urdf.rviz"])
+
+    robot_description = ParameterValue(
+        Command(["xacro ", description_file, " ", "ur_type:=", ur_type]), value_type=str
+    )
+
+    robot_state_publisher_node = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        parameters=[{"robot_description": robot_description}],
+    )
+
+    joint_state_publisher_gui_node = Node(
+        package="joint_state_publisher_gui",
+        executable="joint_state_publisher_gui",
+    )
+
+    rviz_node = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
         output="screen",
-        parameters=[
-            moveit_config.robot_description,
-            moveit_config.robot_description_semantic,
-            moveit_config.robot_description_kinematics
+        arguments=["-d", rvizconfig_file],
+    )
+
+    declared_arguments = [
+        DeclareLaunchArgument(
+            "ur_type",
+            description="Typo/series of used UR robot.",
+            choices=[
+                "ur3",
+                "ur3e",
+                "ur5",
+                "ur5e",
+                "ur10",
+                "ur10e",
+                "ur16e",
+                "ur20",
+                "ur30",
+            ],
+            default_value="ur10e",
+        )
+    ]
+
+    return LaunchDescription(
+        declared_arguments
+        + [
+            joint_state_publisher_gui_node,
+            robot_state_publisher_node,
+            rviz_node,
         ]
     )
-    return LaunchDescription([tut_node])
